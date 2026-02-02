@@ -26,7 +26,7 @@ export const useMarkdown = ({
     if (content === markdownText) return;
 
     setMarkdownText(content);
-  }, [getEditorContent, setMarkdownText, markdownText]);
+  }, [getEditorContent, setMarkdownText]);
 
   const insertStartToggle = useCallback(
     (symbol: string, wrap: boolean = false) => {

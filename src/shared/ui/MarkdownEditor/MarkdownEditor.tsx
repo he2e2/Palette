@@ -48,13 +48,11 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
     };
   }, []);
 
-  const markdownValue = data[updateKey] as string;
-
   useEffect(() => {
-    if (editorViewRef.current && markdownValue) {
+    if (editorViewRef.current && data[updateKey]) {
       syncPreview();
     }
-  }, [syncPreview, markdownValue]);
+  }, [syncPreview, data, updateKey]);
 
   const handleInsertImage = useCallback(
     (file: File) => {
