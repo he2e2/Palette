@@ -1,5 +1,5 @@
 import { debounce } from 'lodash-es';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import styles from './MarkdownPreview.module.scss';
 
@@ -9,7 +9,7 @@ type MarkdownPreviewProps = {
   markdownText: string;
 };
 
-export const MarkdownPreview = ({ markdownText }: MarkdownPreviewProps) => {
+export const MarkdownPreview = memo(({ markdownText }: MarkdownPreviewProps) => {
   const [htmlContent, setHtmlContent] = useState('');
 
   const debouncedParse = useRef(
@@ -34,4 +34,4 @@ export const MarkdownPreview = ({ markdownText }: MarkdownPreviewProps) => {
       }}
     />
   );
-};
+});
