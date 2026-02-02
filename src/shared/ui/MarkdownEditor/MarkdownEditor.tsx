@@ -35,14 +35,16 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
   });
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 1000);
+    const mql = window.matchMedia('(max-width: 1000px)');
+    setIsMobile(mql.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
+    mql.addEventListener('change', handleChange);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      mql.removeEventListener('change', handleChange);
     };
   }, []);
 
@@ -89,10 +91,7 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
 
   const renderEditor = () => (
     <div className={styles.editor}>
-      <Toolbar
-        onCommand={insertStartToggle}
-        onInsertImage={handleInsertImage}
-      />
+      <Toolbar onCommand={insertStartToggle} onInsertImage={handleInsertImage} />
       <CodeMirror
         extensions={extensions}
         onChange={handleChange}
