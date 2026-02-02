@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { debounce } from 'lodash-es';
+import { useEffect, useRef, useState } from 'react';
 
 import styles from './MarkdownPreview.module.scss';
 
@@ -11,13 +12,20 @@ type MarkdownPreviewProps = {
 export const MarkdownPreview = ({ markdownText }: MarkdownPreviewProps) => {
   const [htmlContent, setHtmlContent] = useState('');
 
-  useEffect(() => {
-    const parsingText = async () => {
-      const html = await marked.parse(markdownText);
+  const debouncedParse = useRef(
+    debounce(async (text: string) => {
+      const html = await marked.parse(text);
       setHtmlContent(html);
+    }, 300),
+  ).current;
+
+  useEffect(() => {
+    void debouncedParse(markdownText);
+    return () => {
+      debouncedParse.cancel();
     };
-    void parsingText();
-  }, [markdownText]);
+  }, [markdownText, debouncedParse]);
+
   return (
     <div
       className={styles.mirror}
