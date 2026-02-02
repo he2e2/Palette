@@ -18,7 +18,6 @@ export const MarkdownPreview = ({ markdownText }: MarkdownPreviewProps) => {
     };
     void parsingText();
   }, [markdownText]);
-  console.log('아카이브 마크다운 컴포넌트 청크 로드 시작');
   return (
     <div
       className={styles.mirror}

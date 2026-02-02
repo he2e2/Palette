@@ -1,21 +1,20 @@
 import { markdown } from '@codemirror/lang-markdown';
 import { EditorView } from '@codemirror/view';
 import CodeMirror from '@uiw/react-codemirror';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 
 import styles from './MarkdownEditor.module.scss';
 
 import { MarkdownPreview, Toolbar, useMarkdown } from '@/features';
 
-export interface MarkdownEditorProps<T> {
+export interface MarkdownEditorProps<T extends Record<string, unknown>> {
   data: T;
-  updateKey: keyof T;
+  updateKey: { [K in keyof T]: T[K] extends string ? K : never }[keyof T];
   onUpdate: <K extends keyof T>(key: K, value: T[K]) => void;
   preview?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const MarkdownEditor = <T extends { [key: string]: any }>({
+export const MarkdownEditor = <T extends Record<string, unknown>>({
   data,
   updateKey,
   onUpdate,
@@ -51,6 +50,22 @@ export const MarkdownEditor = <T extends { [key: string]: any }>({
     }
   }, [syncPreview, data, updateKey]);
 
+  const extensions = useMemo(
+    () => [
+      markdown(),
+      EditorView.lineWrapping,
+      EditorView.theme({
+        '&': { backgroundColor: '#f9f9f9', fontSize: '1rem' },
+        '.cm-content': { padding: '1rem' },
+        '.cm-gutters': { display: 'none' },
+        '&.cm-focused': { outline: 'none' },
+        '.cm-activeLine': { backgroundColor: 'transparent' },
+      }),
+      eventHandler,
+    ],
+    [eventHandler],
+  );
+
   const renderEditor = () => (
     <div className={styles.editor}>
       <Toolbar
@@ -62,20 +77,9 @@ export const MarkdownEditor = <T extends { [key: string]: any }>({
         }}
       />
       <CodeMirror
-        extensions={[
-          markdown(),
-          EditorView.lineWrapping,
-          EditorView.theme({
-            '&': { backgroundColor: '#f9f9f9', fontSize: '1rem' },
-            '.cm-content': { padding: '1rem' },
-            '.cm-gutters': { display: 'none' },
-            '&.cm-focused': { outline: 'none' },
-            '.cm-activeLine': { backgroundColor: 'transparent' },
-          }),
-          eventHandler,
-        ]}
+        extensions={extensions}
         onChange={newValue => {
-          if (data[updateKey].length > 2500) return;
+          if ((data[updateKey] as string).length > 2500) return;
           onUpdate(updateKey, newValue as T[typeof updateKey]);
         }}
         onUpdate={update => {
@@ -90,7 +94,7 @@ export const MarkdownEditor = <T extends { [key: string]: any }>({
 
   const renderPreview = () =>
     preview && <MarkdownPreview markdownText={data[updateKey] as string} />;
-  console.log("아카이빙 마크다운 에디터 프리뷰 아님 컴포넌트 청크 로드 시작");
+
   return (
     <div className={styles.container}>
       {isMobile ? (

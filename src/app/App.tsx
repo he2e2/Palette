@@ -5,7 +5,7 @@ import AppRouter from './appRouter';
 import ModalProvider from './ModalProvider';
 import QueryProvider from './QueryProvider';
 
-import { Loader } from '@/shared/ui'; 
+import { Loader } from '@/shared/ui';
 
 function App() {
   return (
