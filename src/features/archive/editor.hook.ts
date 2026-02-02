@@ -1,6 +1,6 @@
 import { EditorSelection } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import type { EditorViewRef } from './editor.type';
 import { useArchiveStore } from './model';
@@ -118,33 +118,37 @@ export const useMarkdown = ({
     [insertImageAtCursor],
   );
 
-  const eventHandler = EditorView.domEventHandlers({
-    paste(event, view) {
-      if (!event.clipboardData) return;
+  const eventHandler = useMemo(
+    () =>
+      EditorView.domEventHandlers({
+        paste(event, view) {
+          if (!event.clipboardData) return;
 
-      const { items } = event.clipboardData;
+          const { items } = event.clipboardData;
 
-      for (const item of items) {
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file) {
-            void handleImage(file, view);
+          for (const item of items) {
+            if (item.kind === 'file') {
+              const file = item.getAsFile();
+              if (file) {
+                void handleImage(file, view);
+              }
+            }
           }
-        }
-      }
-    },
-    drop(event, view) {
-      if (!event.dataTransfer) return;
+        },
+        drop(event, view) {
+          if (!event.dataTransfer) return;
 
-      const cursorPos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+          const cursorPos = view.posAtCoords({ x: event.clientX, y: event.clientY });
 
-      if (cursorPos) view.dispatch({ selection: { anchor: cursorPos, head: cursorPos } });
+          if (cursorPos) view.dispatch({ selection: { anchor: cursorPos, head: cursorPos } });
 
-      const { files } = event.dataTransfer;
+          const { files } = event.dataTransfer;
 
-      for (const file of files) void handleImage(file, view);
-    },
-  });
+          for (const file of files) void handleImage(file, view);
+        },
+      }),
+    [handleImage],
+  );
 
   return {
     syncPreview,
