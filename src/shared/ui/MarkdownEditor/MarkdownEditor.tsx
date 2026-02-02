@@ -1,7 +1,7 @@
 import { markdown } from '@codemirror/lang-markdown';
 import { EditorView } from '@codemirror/view';
 import CodeMirror from '@uiw/react-codemirror';
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 
 import styles from './MarkdownEditor.module.scss';
 
@@ -21,6 +21,8 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
   preview = true,
 }: MarkdownEditorProps<T>) => {
   const editorViewRef = useRef<EditorView | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
   const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -50,6 +52,23 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
     }
   }, [syncPreview, data, updateKey]);
 
+  const handleInsertImage = useCallback(
+    (file: File) => {
+      if (editorViewRef.current) {
+        void handleImage(file, editorViewRef.current);
+      }
+    },
+    [handleImage],
+  );
+
+  const handleChange = useCallback(
+    (newValue: string) => {
+      if ((dataRef.current[updateKey] as string).length > 2500) return;
+      onUpdate(updateKey, newValue as T[typeof updateKey]);
+    },
+    [updateKey, onUpdate],
+  );
+
   const extensions = useMemo(
     () => [
       markdown(),
@@ -70,18 +89,11 @@ export const MarkdownEditor = <T extends Record<string, unknown>>({
     <div className={styles.editor}>
       <Toolbar
         onCommand={insertStartToggle}
-        onInsertImage={file => {
-          if (editorViewRef.current) {
-            void handleImage(file, editorViewRef.current);
-          }
-        }}
+        onInsertImage={handleInsertImage}
       />
       <CodeMirror
         extensions={extensions}
-        onChange={newValue => {
-          if ((data[updateKey] as string).length > 2500) return;
-          onUpdate(updateKey, newValue as T[typeof updateKey]);
-        }}
+        onChange={handleChange}
         onUpdate={update => {
           if (update.view) {
             editorViewRef.current = update.view;
