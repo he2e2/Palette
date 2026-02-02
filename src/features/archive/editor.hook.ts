@@ -8,6 +8,59 @@ import type { PostImagesApiResponse } from '../image/image.dto';
 
 import api from '@/shared/api/baseApi';
 
+const dispatchWrapToggle = (
+  view: EditorView,
+  symbol: string,
+  selectedText: string,
+  from: number,
+  to: number,
+) => {
+  const hasExist = selectedText.startsWith(symbol) && selectedText.endsWith(symbol);
+
+  view.dispatch({
+    changes: {
+      from,
+      to,
+      insert: hasExist
+        ? selectedText.slice(symbol.length, selectedText.length - symbol.length)
+        : `${symbol}${selectedText}${symbol}`,
+    },
+    selection: EditorSelection.range(
+      from + (hasExist ? -symbol.length : symbol.length),
+      to + (hasExist ? -symbol.length : symbol.length),
+    ),
+  });
+};
+
+const dispatchCodeBlock = (
+  view: EditorView,
+  selectedText: string,
+  from: number,
+  to: number,
+) => {
+  view.dispatch({
+    changes: {
+      from,
+      to,
+      insert: `\`\`\`\n${selectedText}\n\`\`\``,
+    },
+    selection: EditorSelection.cursor(to + 4),
+  });
+};
+
+const dispatchPrefix = (
+  view: EditorView,
+  symbol: string,
+  selectedText: string,
+  from: number,
+  to: number,
+) => {
+  view.dispatch({
+    changes: { from, to, insert: `${symbol}${selectedText}` },
+    selection: EditorSelection.cursor(to + symbol.length),
+  });
+};
+
 export const useMarkdown = ({
   editorViewRef,
   markdownText,
@@ -39,35 +92,11 @@ export const useMarkdown = ({
       const selectedText = editorView.state.sliceDoc(from, to);
 
       if (wrap) {
-        const hasExist = selectedText.startsWith(symbol) && selectedText.endsWith(symbol);
-
-        editorView.dispatch({
-          changes: {
-            from,
-            to,
-            insert: hasExist
-              ? selectedText.slice(symbol.length, selectedText.length - symbol.length)
-              : `${symbol}${selectedText}${symbol}`,
-          },
-          selection: EditorSelection.range(
-            from + (hasExist ? -symbol.length : symbol.length),
-            to + (hasExist ? -symbol.length : symbol.length),
-          ),
-        });
+        dispatchWrapToggle(editorView, symbol, selectedText, from, to);
       } else if (symbol === '```') {
-        editorView.dispatch({
-          changes: {
-            from,
-            to,
-            insert: `\`\`\`\n${selectedText}\n\`\`\``,
-          },
-          selection: EditorSelection.cursor(to + 4),
-        });
+        dispatchCodeBlock(editorView, selectedText, from, to);
       } else {
-        editorView.dispatch({
-          changes: { from, to, insert: `${symbol}${selectedText}` },
-          selection: EditorSelection.cursor(to + symbol.length),
-        });
+        dispatchPrefix(editorView, symbol, selectedText, from, to);
       }
     },
     [editorViewRef],
@@ -94,20 +123,18 @@ export const useMarkdown = ({
       const { archiveData, updateArchiveData } = useArchiveStore.getState();
 
       try {
-        const imageUrls = await api
-          .post<PostImagesApiResponse>('/upload/images', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          })
-          .then(res => {
-            updateArchiveData('imageUrls', [
-              ...archiveData.imageUrls,
-              { url: res.data.data?.imgUrls[0].imgUrl ?? '' },
-            ]);
+        const res = await api.post<PostImagesApiResponse>('/upload/images', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
 
-            return res.data.data?.imgUrls;
-          });
+        const imageUrls = res.data.data?.imgUrls;
+
+        updateArchiveData('imageUrls', [
+          ...archiveData.imageUrls,
+          { url: imageUrls?.[0].imgUrl ?? '' },
+        ]);
 
         insertImageAtCursor(view, `![Image](${imageUrls?.[0].imgUrl})`);
       } catch {
@@ -153,7 +180,6 @@ export const useMarkdown = ({
   return {
     syncPreview,
     insertStartToggle,
-    insertImageAtCursor,
     eventHandler,
     handleImage,
   };
